@@ -98,7 +98,7 @@ Texture texture_pit;
 struct Playercl {
 	float x = 300, y = 300, retotate=0;
 	bool isCreate = false;
-	int team = 0,speed = 100,radius = 25,health = 0,maxhealth = 10000,maxbombcount = 1,powerboom = 1,id;
+	int team = 0,speed = 100,radius = 25,health = 0,maxhealth = 10000,maxbombcount = 1,powerboom = 5,id;
 	Clock respawntimer,bombtimer;
 	string name;
 	int lname, lvl, maprendrad = 16;
@@ -191,32 +191,25 @@ struct boomcl {
 int mapscl[1024][1024];
 int sizemcl = 0;
 
-void createBoomUpCl(int u, int powerboom, float x, float y) {
-//	RectangleShape boom_;
+void destroy_blockcl(int i, int j) {
+  if (mapscl[i][j] == 50) {
+    mapscl[i][j] = 0;
+  }
+}
 
-//	for (int i = 0; i <= 9999; ++i) {
-//		if (boomscl[i].isCreate) {
-//			continue;
-//		}
-//		boomscl[i].author = u;
-//		boomscl[i].x = x;
-//		boomscl[i].y = y;
-//		boomscl[i].isCreate = true;
-//		boomscl[i].powerboom = powerboom;
-//		boomscl[i].team = player.team;
-//		boomscl[i].direction = BoomDirection::UP;
-//		boomscl[i].btimer.restart();
-//
-//		if (powerboom > 0) {
-//			createBoomUpCl(u, powerboom-1, x, y-50);
-//		}
-//
-//		break;
-//	}
+void createBoomUpCl(int u, int powerboom, float x, float y) {
+
   for (auto &boom : boomscl) {
     if (boom.isCreate) {
       continue;
     }
+
+    int i1 = (int)floor(x/50), j1 = (int)floor(y/50);
+
+    if (mapscl[i1][j1] >= 25) {
+      powerboom = 0;
+    }
+
     boom.author = u;
     boom.x = x;
     boom.y = y;
@@ -241,6 +234,13 @@ void createBoomDownCl(int u, int powerboom, float x, float y) {
 		if (boomscl[i].isCreate) {
 			continue;
 		}
+
+    int i1 = (int)floor(x/50), j1 = (int)floor(y/50);
+
+    if (mapscl[i1][j1] >= 25) {
+      powerboom = 0;
+    }
+
 		boomscl[i].author = u;
 		boomscl[i].x = x;
 		boomscl[i].y = y;
@@ -265,6 +265,13 @@ void createBoomRightCl(int u, int powerboom, float x, float y) {
 		if (boomscl[i].isCreate) {
 			continue;
 		}
+
+    int i1 = (int)floor(x/50), j1 = (int)floor(y/50);
+
+    if (mapscl[i1][j1] >= 25) {
+      powerboom = 0;
+    }
+
 		boomscl[i].author = u;
 		boomscl[i].x = x;
 		boomscl[i].y = y;
@@ -289,6 +296,13 @@ void createBoomLeftCl(int u, int powerboom, float x, float y) {
 		if (boomscl[i].isCreate) {
 			continue;
 		}
+
+    int i1 = (int)floor(x/50), j1 = (int)floor(y/50);
+
+    if (mapscl[i1][j1] >= 25) {
+      powerboom = 0;
+    }
+
 		boomscl[i].author = u;
 		boomscl[i].x = x;
 		boomscl[i].y = y;
@@ -315,6 +329,13 @@ void createBoomCenterCl(int u, int powerboom, float x, float y) {
 		if (boomscl[i].isCreate) {
 			continue;
 		}
+
+    int i1 = (int)floor(x/50), j1 = (int)floor(y/50);
+
+    if (mapscl[i1][j1] >= 25) {
+      powerboom = 0;
+    }
+
 		boomscl[i].author = u;
 		boomscl[i].x = x;
 		boomscl[i].y = y;
@@ -537,20 +558,19 @@ void render_players() {
 
     if (!playerscl[i].isCreate) continue;
 
-    cout << "-2 " << i << "\n";
+//    cout << "-2 " << i << "\n";
 
     RectangleShape player_;
 
     player_.setTexture(&texture_player);
     player_.setTextureRect(IntRect(0, 20, 253, 176));
-//		player_].setPosition(player.x, players.y);
     player_.setSize(Vector2f(playerscl[i].radius*2,playerscl[i].radius*2));
     player_.setRotation(0);
 
     player_.move(playerscl[i].x, playerscl[i].y);
     player_.move(player_.getSize() / 2.f);
     player_.setOrigin(player_.getSize() / 2.f);
-    player_.rotate(player.retotate);
+    player_.rotate(playerscl[i].retotate);
 
     app.draw(player_);
 
@@ -930,10 +950,10 @@ void controller() {
   }
 
 	render_map();
-	render_player();
-  render_players();
   render_bomb();
   render_boom();
+  render_players();
+  render_player();
   render_map2();
 
   View view;
@@ -989,11 +1009,13 @@ void network_on_client_message(uint8_t packet, const void *data) {
     playerscl[p->id].isCreate = true;
     playerscl[p->id].x = p->x;
     playerscl[p->id].y = p->y;
-    cout << "true " << p->x << " " << p->y << "\n";
+//    cout << "true " << p->x << " " << p->y << "\n";
 
 
     break;
   }
+
+  ///////////////////////////////////////////////////////////////////////////////
 
   case PacketServerSendPlayersInfo::ID: {
 		auto p = reinterpret_cast<const PacketServerSendPlayersInfo *>(data);
@@ -1010,7 +1032,7 @@ void network_on_client_message(uint8_t packet, const void *data) {
 		playerscl[p->id].health = p->health;
 		playerscl[p->id].team = p->team;
 		playerscl[p->id].isCreate = true;
-		cout << "---" << p->id << "\n";
+//		cout << "---" << p->id << "\n";
 
 		break;
 	}
@@ -1029,6 +1051,8 @@ void network_on_client_message(uint8_t packet, const void *data) {
 		break;
 	}
 
+	/////////////////////////////////////////////////////////////////
+
 	case PacketServerRespawnPlayer::ID: {
 		auto p = reinterpret_cast<const PacketServerRespawnPlayer *>(data);
 
@@ -1046,6 +1070,8 @@ void network_on_client_message(uint8_t packet, const void *data) {
 		break;
 	}
 
+	//////////////////////////////////////////////////////////////////////////////////////
+
 	case PacketServerMap::ID: {
 		auto p = reinterpret_cast<const PacketServerMap *>(data);
 
@@ -1060,6 +1086,17 @@ void network_on_client_message(uint8_t packet, const void *data) {
 
 		break;
 	}
+
+	//////////////////////////////////////////////////////////////////////////////
+
+  case PacketServerDestroyBlock::ID: {
+    auto p = reinterpret_cast<const PacketServerDestroyBlock *>(data);
+
+    destroy_blockcl(p->i, p->j);
+
+    break;
+  }
+
   }
 }
 
