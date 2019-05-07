@@ -11,11 +11,11 @@ set(SFML_STATIC_LIBRARIES TRUE)
 find_package(
         SFML 2.5.1
         COMPONENTS
-            network
-            audio
-            graphics
-            window
-            system
+        network
+        audio
+        graphics
+        window
+        system
         REQUIRED
 )
 
@@ -30,7 +30,7 @@ add_executable(sfml_test
 
 target_include_directories(sfml_test
         PRIVATE
-            ${ENet_INCLUDE_DIRS}
+        ${ENet_INCLUDE_DIRS}
         )
 
 target_link_libraries(sfml_test
