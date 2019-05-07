@@ -821,31 +821,32 @@ void setup() {
 	player.team = 0;
 
 	font.loadFromFile(R"(C:\Windows\Fonts\segoeui.ttf)");
-	texture_grass.loadFromFile(R"(D:\Vitya\images\lightgreengrass.jpg)");
-  texture_ice.loadFromFile(R"(D:\Vitya\images\ice.jpg)");
-  texture_bush.loadFromFile(R"(D:\Vitya\images\bush.jpeg)");
-  texture_redbrick.loadFromFile(R"(D:\Vitya\images\redbrick.jpg)");
-  texture_bomb.loadFromFile(R"(D:\Vitya\images\bomb.png)");
-  texture_oldgrass.loadFromFile(R"(D:\Vitya\images\oldgrass1.jpg)");
-  texture_saw.loadFromFile(R"(D:\Vitya\images\saw.png)");
-  texture_floorsaw.loadFromFile(R"(D:\Vitya\images\floorsaw.png)");
-  texture_player.loadFromFile(R"(D:\Vitya\images\player.gif)");
-  texture_hardbrick.loadFromFile(R"(D:\Vitya\images\hardbrick.jpg)");
-  texture_whitebrick.loadFromFile(R"(D:\Vitya\images\whitebrick.png)");
-  texture_whitehardbrick.loadFromFile(R"(D:\Vitya\images\whitehardbrick.png)");
-  texture_pit.loadFromFile(R"(D:\Vitya\images\pit.png)");
+
+	texture_grass.loadFromFile(R"(images/lightgreengrass.jpg)");
+  texture_ice.loadFromFile(R"(images/ice.jpg)");
+  texture_bush.loadFromFile(R"(images/bush.jpeg)");
+  texture_redbrick.loadFromFile(R"(images/redbrick.jpg)");
+  texture_bomb.loadFromFile(R"(images/bomb.png)");
+  texture_oldgrass.loadFromFile(R"(images/oldgrass1.jpg)");
+  texture_saw.loadFromFile(R"(images/saw.png)");
+  texture_floorsaw.loadFromFile(R"(images/floorsaw.png)");
+  texture_player.loadFromFile(R"(images/player.gif)");
+  texture_hardbrick.loadFromFile(R"(images/hardbrick.jpg)");
+  texture_whitebrick.loadFromFile(R"(images/whitebrick.png)");
+  texture_whitehardbrick.loadFromFile(R"(images/whitehardbrick.png)");
+  texture_pit.loadFromFile(R"(images/pit.png)");
 
 
-  texture_boom[(int)BoomDirection::CENTER].loadFromFile(R"(D:\Vitya\images\explos_0.png)");
-	texture_boom[(int)BoomDirection::UP].loadFromFile(R"(D:\Vitya\images\explos_up.png)");
-	texture_boom[(int)BoomDirection::DOWN].loadFromFile(R"(D:\Vitya\images\explos_dp.png)");
-	texture_boom[(int)BoomDirection::LEFT].loadFromFile(R"(D:\Vitya\images\explos_lp.png)");
-	texture_boom[(int)BoomDirection::RIGHT].loadFromFile(R"(D:\Vitya\images\explos_rp.png)");
+  texture_boom[(int)BoomDirection::CENTER].loadFromFile(R"(images/explos_0.png)");
+	texture_boom[(int)BoomDirection::UP].loadFromFile(R"(images/explos_up.png)");
+	texture_boom[(int)BoomDirection::DOWN].loadFromFile(R"(images/explos_dp.png)");
+	texture_boom[(int)BoomDirection::LEFT].loadFromFile(R"(images/explos_lp.png)");
+	texture_boom[(int)BoomDirection::RIGHT].loadFromFile(R"(images/explos_rp.png)");
 
-	texture_boom[(int)BoomDirection::UP + 4].loadFromFile(R"(D:\Vitya\images\explos_u.png)");
-	texture_boom[(int)BoomDirection::DOWN + 4].loadFromFile(R"(D:\Vitya\images\explos_d.png)");
-	texture_boom[(int)BoomDirection::LEFT + 4].loadFromFile(R"(D:\Vitya\images\explos_l.png)");
-	texture_boom[(int)BoomDirection::RIGHT + 4].loadFromFile(R"(D:\Vitya\images\explos_r.png)");
+	texture_boom[(int)BoomDirection::UP + 4].loadFromFile(R"(images/explos_u.png)");
+	texture_boom[(int)BoomDirection::DOWN + 4].loadFromFile(R"(images/explos_d.png)");
+	texture_boom[(int)BoomDirection::LEFT + 4].loadFromFile(R"(images/explos_l.png)");
+	texture_boom[(int)BoomDirection::RIGHT + 4].loadFromFile(R"(images/explos_r.png)");
 }
 
 void events() {
