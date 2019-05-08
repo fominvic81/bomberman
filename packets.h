@@ -103,7 +103,7 @@ struct PacketServerMap {
 
 struct PacketServerDestroyBlock {
     static const uint8_t ID = 9;
-    int i, j;
+    int i, j, tile;
 };
 
 #pragma pack(pop)

@@ -99,17 +99,55 @@ int structspawnsize = 3;
 
 
 int maps[1024][1024];
-int sizem = 128;
+int sizem = 64;
 
 void destroy_block(int i, int j) {
+
+  if (maps[i][j] < 0) {
+    maps[i][j] = 0;
+  }
+
+  if (maps[i][j] >= 50) {
+    int r = rand();
+
+    if (r % 13 == 0) {
+      maps[i][j] = -1; // bomb count
+    }
+
+    if (r % 17 == 0) {
+      maps[i][j] = -2; // power
+    }
+
+    if (r % 19 == 0) {
+      maps[i][j] = -3; // rickins
+    }
+
+    if (r % 27 == 0) {
+      maps[i][j] = -4; // radio bomb
+    }
+
+    if (r % 41 == 0) {
+      maps[i][j] = -5; // burn wall
+    }
+
+    if (r % 53 == 0) {
+      maps[i][j] = -6; // super bomb
+    }
+
+  }
+
+
   if (maps[i][j] == 50) {
     maps[i][j] = 0;
   }
 
 
+
+
   PacketServerDestroyBlock dcoord;
   dcoord.i = i;
   dcoord.j = j;
+  dcoord.tile = maps[i][j];
   network_server_broadcast(&dcoord);
 }
 
@@ -152,7 +190,7 @@ void createmap() {
 
           for (int l = i - structspawnsize; l < i; ++l) {
             for (int r = j - structspawnsize; r < j; ++r) {
-              maps[l][r] = structspawn[l - i + 3][r - j + 3];
+              maps[l][r] = structspawn[l - i + structspawnsize][r - j + structspawnsize];
             }
           }
         }
@@ -209,10 +247,14 @@ void createBoomUp(int u, int powerboom, float x, float y) {
 
     int i1 = (int) floor(x / 50), j1 = (int) floor(y / 50);
 
+    if (maps[i1][j1] < 0) {
+      destroy_block(i1, j1);
+    }
     if (maps[i1][j1] >= 25) {
       powerboom = 0;
       destroy_block(i1, j1);
     }
+
 
     booms[i].author = u;
     booms[i].x = x;
@@ -242,15 +284,14 @@ void createBoomDown(int u, int powerboom, float x, float y) {
 
     int i1 = (int) floor(x / 50), j1 = (int) floor(y / 50);
 
-    if (maps[i1][j1] >= 25) {
-//      PacketServerDestroyBlock dcoord;
-      powerboom = 0;
-//      dcoord.i = i1;
-//      dcoord.j = j1;
-
+    if (maps[i1][j1] < 0) {
       destroy_block(i1, j1);
-//      network_server_broadcast(&dcoord);
     }
+    if (maps[i1][j1] >= 25) {
+      powerboom = 0;
+      destroy_block(i1, j1);
+    }
+
 
     booms[i].author = u;
     booms[i].x = x;
@@ -279,15 +320,14 @@ void createBoomRight(int u, int powerboom, float x, float y) {
 
     int i1 = (int) floor(x / 50), j1 = (int) floor(y / 50);
 
-    if (maps[i1][j1] >= 25) {
-//      PacketServerDestroyBlock dcoord;
-      powerboom = 0;
-//      dcoord.i = i1;
-//      dcoord.j = j1;
-
+    if (maps[i1][j1] < 0) {
       destroy_block(i1, j1);
-//      network_server_broadcast(&dcoord);
     }
+    if (maps[i1][j1] >= 25) {
+      powerboom = 0;
+      destroy_block(i1, j1);
+    }
+
 
     booms[i].author = u;
     booms[i].x = x;
@@ -316,15 +356,14 @@ void createBoomLeft(int u, int powerboom, float x, float y) {
 
     int i1 = (int) floor(x / 50), j1 = (int) floor(y / 50);
 
-    if (maps[i1][j1] >= 25) {
-//      PacketServerDestroyBlock dcoord;
-      powerboom = 0;
-//      dcoord.i = i1;
-//      dcoord.j = j1;
-
+    if (maps[i1][j1] < 0) {
       destroy_block(i1, j1);
-//      network_server_broadcast(&dcoord);
     }
+    if (maps[i1][j1] >= 25) {
+      powerboom = 0;
+      destroy_block(i1, j1);
+    }
+
 
     booms[i].author = u;
     booms[i].x = x;
@@ -355,15 +394,14 @@ void createBoomCenter(int u, int powerboom, float x, float y) {
 
     int i1 = (int) floor(x / 50), j1 = (int) floor(y / 50);
 
-    if (maps[i1][j1] >= 25) {
-//      PacketServerDestroyBlock dcoord;
-      powerboom = 0;
-//      dcoord.i = i1;
-//      dcoord.j = j1;
-
+    if (maps[i1][j1] < 0) {
       destroy_block(i1, j1);
-//      network_server_broadcast(&dcoord);
     }
+    if (maps[i1][j1] >= 25) {
+      powerboom = 0;
+      destroy_block(i1, j1);
+    }
+
 
     booms[i].author = u;
     booms[i].x = x;
@@ -571,11 +609,25 @@ void network_on_server_message(int i, uint8_t packet, const void *data) {
 
   case PacketPlayerMyCoordinates::ID: {
     auto p = reinterpret_cast<const PacketPlayerMyCoordinates *>(data);
+    int j = p->id;
 
-    players[p->id].x = p->x;
-    players[p->id].y = p->y;
+    players[j].x = p->x;
+    players[j].y = p->y;
 
     ServerSendCoordinates();
+
+    if (maps[(int)floor(players[j].x/50)][(int)floor(players[j].y/50)] < 0) {
+      destroy_block((int)floor(players[j].x/50), (int)floor(players[j].y/50));
+    }
+    if (maps[(int)floor(players[j].x/50)+1][(int)floor(players[j].y/50)+1] < 0) {
+      destroy_block((int)floor(players[j].x/50)+1, (int)floor(players[j].y/50)+1);
+    }
+    if (maps[(int)floor(players[j].x/50)+1][(int)floor(players[j].y/50)] < 0) {
+      destroy_block((int)floor(players[j].x/50)+1, (int)floor(players[j].y/50));
+    }
+    if (maps[(int)floor(players[j].x/50)][(int)floor(players[j].y/50)+1] < 0) {
+      destroy_block((int)floor(players[j].x/50), (int)floor(players[j].y/50)+1);
+    }
 
     break;
   }

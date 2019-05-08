@@ -92,6 +92,14 @@ Texture texture_boom[9];
 Texture texture_whitebrick;
 Texture texture_whitehardbrick;
 Texture texture_pit;
+Texture texture_tree;
+Texture texture_bomb_count;
+Texture texture_burn_wall;
+Texture texture_power;
+Texture texture_radio_bomb;
+Texture texture_rickins;
+Texture texture_super_bomb;
+
 
 
 struct Playercl {
@@ -190,10 +198,8 @@ struct boomcl {
 int mapscl[1024][1024];
 int sizemcl = 0;
 
-void destroy_blockcl(int i, int j) {
-  if (mapscl[i][j] == 50) {
-    mapscl[i][j] = 0;
-  }
+void destroy_blockcl(int i, int j, int tile) {
+  mapscl[i][j] = tile;
 }
 
 void createBoomUpCl(int u, int powerboom, float x, float y) {
@@ -602,7 +608,7 @@ void render_player() {
 
 
   if (player.team == 0) {
-    player_.setFillColor(Color(255, 50, 50));
+    player_.setFillColor(Color(255, 255, 0));
   }
 
   if (player.team == 1) {
@@ -680,6 +686,72 @@ void render_map() {
       block.setTextureRect(IntRect(0, 0, 100, 100));
       app.draw(block);
 
+      if (mapscl[i][j] == -1) {
+
+        block.setPosition(i1 - 1, j1 - 1);
+        block.setSize(Vector2f(52, 52));
+        block.setTexture(&texture_bomb_count);
+        block.setTextureRect(IntRect(0, 0, 32, 32));
+        app.draw(block);
+
+        continue;
+      }
+
+      if (mapscl[i][j] == -2) {
+
+        block.setPosition(i1 - 1, j1 - 1);
+        block.setSize(Vector2f(52, 52));
+        block.setTexture(&texture_power);
+        block.setTextureRect(IntRect(0, 0, 32, 32));
+        app.draw(block);
+
+        continue;
+      }
+
+      if (mapscl[i][j] == -3) {
+
+        block.setPosition(i1 - 1, j1 - 1);
+        block.setSize(Vector2f(52, 52));
+        block.setTexture(&texture_rickins);
+        block.setTextureRect(IntRect(0, 0, 32, 32));
+        app.draw(block);
+
+        continue;
+      }
+
+      if (mapscl[i][j] == -4) {
+
+        block.setPosition(i1 - 1, j1 - 1);
+        block.setSize(Vector2f(52, 52));
+        block.setTexture(&texture_radio_bomb);
+        block.setTextureRect(IntRect(0, 0, 32, 32));
+        app.draw(block);
+
+        continue;
+      }
+
+      if (mapscl[i][j] == -5) {
+
+        block.setPosition(i1 - 1, j1 - 1);
+        block.setSize(Vector2f(52, 52));
+        block.setTexture(&texture_burn_wall);
+        block.setTextureRect(IntRect(0, 0, 32, 32));
+        app.draw(block);
+
+        continue;
+      }
+
+      if (mapscl[i][j] == -6) {
+
+        block.setPosition(i1 - 1, j1 - 1);
+        block.setSize(Vector2f(52, 52));
+        block.setTexture(&texture_super_bomb);
+        block.setTextureRect(IntRect(0, 0, 32, 32));
+        app.draw(block);
+
+        continue;
+      }
+
       if (mapscl[i][j] == 0) {
 
         block.setPosition(i1 - 1, j1 - 1);
@@ -696,7 +768,7 @@ void render_map() {
         block.setPosition(i1 - 1, j1 - 1);
         block.setSize(Vector2f(52, 52));
         block.setTexture(&texture_ice);
-        block.setTextureRect(IntRect(15, 15, 130, 130));
+        block.setTextureRect(IntRect(0, 0, 128, 128));
         app.draw(block);
 
         continue;
@@ -747,6 +819,17 @@ void render_map() {
 //				block.setOrigin(0, 0);
 //				block.setRotation(0);
 
+
+        continue;
+      }
+
+      if (mapscl[i][j] == 6) {
+
+        block.setPosition(i1 - 1, j1 - 1);
+        block.setSize(Vector2f(52, 52));
+        block.setTexture(&texture_tree);
+        block.setTextureRect(IntRect(0, 0, 96, 128));
+        app.draw(block);
 
         continue;
       }
@@ -842,6 +925,14 @@ void setup() {
   texture_whitebrick.loadFromFile(R"(images/whitebrick.png)");
   texture_whitehardbrick.loadFromFile(R"(images/whitehardbrick.png)");
   texture_pit.loadFromFile(R"(images/pit.png)");
+  texture_tree.loadFromFile(R"(images/tree.png)");
+
+  texture_bomb_count.loadFromFile(R"(images/bomb_count.png)");
+  texture_burn_wall.loadFromFile(R"(images/burn_wall.png)");
+  texture_power.loadFromFile(R"(images/power.png)");
+  texture_radio_bomb.loadFromFile(R"(images/radio_bomb.png)");
+  texture_rickins.loadFromFile(R"(images/rickins.png)");
+  texture_super_bomb.loadFromFile(R"(images/super_bomb.png)");
 
 
   texture_boom[(int) BoomDirection::CENTER].loadFromFile(R"(images/explos_0.png)");
@@ -893,7 +984,7 @@ void controller() {
   app.clear(Color(0, 0, 0));
 
   if (app.hasFocus()) {
-    if (Keyboard::isKeyPressed(Keyboard::LControl)) {
+    if (Keyboard::isKeyPressed(Keyboard::Space)) {
       if (player.bombtimer.getElapsedTime().asSeconds() >= 0.25) {
 
         PacketPlayerCreateBomb bomb1;
@@ -1077,7 +1168,7 @@ void network_on_client_message(uint8_t packet, const void *data) {
   case PacketServerDestroyBlock::ID: {
     auto p = reinterpret_cast<const PacketServerDestroyBlock *>(data);
 
-    destroy_blockcl(p->i, p->j);
+    destroy_blockcl(p->i, p->j, p->tile);
 
     break;
   }
