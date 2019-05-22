@@ -23,18 +23,6 @@ struct PacketPlayerCreateBomb {
 	int id;
 };
 
-struct PacketPlayerCreateRadioBomb {
-  static const uint8_t ID = 3;
-
-	int id;
-};
-
-struct PacketPlayerActivateRadioBomb {
-  static const uint8_t ID = 4;
-
-	int id;
-};
-
 
 // Server
 struct PacketServerSendCoordinates {
@@ -73,26 +61,18 @@ struct PacketServerCreateBomb {
 
 	float x, y;
 	int power,id;
+	bool has_burn_wall = false, has_super_bomb = false;
 };
 
-struct PacketServerCreateRadioBomb {
-  static const uint8_t ID = 5;
-
-	float x, y;
-	int power, id;
-};
-
-struct PacketServerActivateRadioBomb {
+struct PacketServerActivateBomb {
   static const uint8_t ID = 6;
 
-	int id;
+
+  int team;
+	int power;
+	float x, y;
 };
 
-struct PacketServerCreateBoom {
-  static const uint8_t ID = 7;
-
-  float x, y;
-};
 
 struct PacketServerMap {
   static const uint8_t ID = 8;
@@ -104,6 +84,11 @@ struct PacketServerMap {
 struct PacketServerDestroyBlock {
     static const uint8_t ID = 9;
     int i, j, tile;
+};
+
+struct PacketServerPlayerTakeBonus {
+    static const uint8_t ID = 10;
+    int bonus;
 };
 
 #pragma pack(pop)

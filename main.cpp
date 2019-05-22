@@ -105,17 +105,19 @@ Texture texture_super_bomb;
 struct Playercl {
     float x = 300, y = 300, retotate = 0;
     bool isCreate = false;
-    int team = 0, speed = 100, radius = 25, health = 0, maxhealth = 10000, maxbombcount = 1, powerboom = 5, id;
+    int team = 0, speed = 100, radius = 25, health = 0, maxhealth = 10000, id;
     Clock respawntimer, bombtimer;
     string name;
     int lname, lvl, maprendrad = 16;
     int move = 0;
+    int maxbombcount = 1, powerboom = 5, rickins = 1;
+    bool has_burn_wall = false, has_radio_bomb = false, has_super_bomb = false;
 } player;
 
 struct Playerscl {
     float x = 0, y = 0, retotate = 0;
     bool isCreate = false;
-    int team = 0, radius = 25, health = 2, id;
+    int team = 0, radius = 25, health = 2;
     string name;
     int lname, lvl;
 } playerscl[32];
@@ -123,10 +125,12 @@ struct Playerscl {
 
 struct bombcl {
     float x = 2, y = 2;
-    Clock timerboom;
     int author = 1, powerboom, team = 0;
-    bool isCreate = false;
-} bombscl[2000];
+    bool has_burn_wall = false, has_super_bomb = false;
+    Clock timer;
+    int id;
+} sbombcl;
+vector<bombcl> bombscl;
 
 enum class BoomDirection : int {
     CENTER = 0,
@@ -139,11 +143,10 @@ enum class BoomDirection : int {
 struct boomcl {
     float x = 0, y = 0;
     int team = 0, author, powerboom;
-    bool isCreate = false;
     Clock btimer;
     BoomDirection direction;
-} boomscl[10000];
-
+} sboomcl;
+vector<boomcl> boomscl;
 
 //int *test_map2[] = {
 //		//      1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32
@@ -202,43 +205,34 @@ void destroy_blockcl(int i, int j, int tile) {
   mapscl[i][j] = tile;
 }
 
-void createBoomUpCl(int u, int powerboom, float x, float y) {
+void createBoomUpCl(int powerboom, float x, float y, int team) {
+  
 
-  for (auto &boom : boomscl) {
-    if (boom.isCreate) {
-      continue;
-    }
+  int i1 = (int) floor(x / 50), j1 = (int) floor(y / 50);
 
-    int i1 = (int) floor(x / 50), j1 = (int) floor(y / 50);
-
-    if (mapscl[i1][j1] >= 25) {
-      powerboom = 0;
-    }
-
-    boom.author = u;
-    boom.x = x;
-    boom.y = y;
-    boom.isCreate = true;
-    boom.powerboom = powerboom;
-    boom.team = player.team;
-    boom.direction = BoomDirection::UP;
-    boom.btimer.restart();
-
-    if (powerboom > 0) {
-      createBoomUpCl(u, powerboom - 1, x, y - 50);
-    }
-
-    break;
+  if (mapscl[i1][j1] >= 25) {
+    powerboom = 0;
   }
+
+  sboomcl.x = x;
+  sboomcl.y = y;
+  sboomcl.powerboom = powerboom;
+  sboomcl.team = team;
+  sboomcl.direction = BoomDirection::UP;
+  sboomcl.btimer.restart();
+  
+  boomscl.push_back(sboomcl);
+
+  if (powerboom > 0) {
+    createBoomUpCl(powerboom - 1, x, y - 50, team);
+  }
+    
+  
 }
 
-void createBoomDownCl(int u, int powerboom, float x, float y) {
+void createBoomDownCl(int powerboom, float x, float y, int team) {
 //	RectangleShape boom_;
 
-  for (int i = 0; i <= 9999; ++i) {
-    if (boomscl[i].isCreate) {
-      continue;
-    }
 
     int i1 = (int) floor(x / 50), j1 = (int) floor(y / 50);
 
@@ -246,30 +240,24 @@ void createBoomDownCl(int u, int powerboom, float x, float y) {
       powerboom = 0;
     }
 
-    boomscl[i].author = u;
-    boomscl[i].x = x;
-    boomscl[i].y = y;
-    boomscl[i].isCreate = true;
-    boomscl[i].powerboom = powerboom;
-    boomscl[i].team = player.team;
-    boomscl[i].direction = BoomDirection::DOWN;
-    boomscl[i].btimer.restart();
+    sboomcl.x = x;
+    sboomcl.y = y;
+    sboomcl.powerboom = powerboom;
+    sboomcl.team = team;
+    sboomcl.direction = BoomDirection::DOWN;
+    sboomcl.btimer.restart();
+    
+    boomscl.push_back(sboomcl);
 
     if (powerboom > 0) {
-      createBoomDownCl(u, powerboom - 1, x, y + 50);
+      createBoomDownCl(powerboom - 1, x, y + 50, team);
     }
-
-    break;
-  }
+    
 }
 
-void createBoomRightCl(int u, int powerboom, float x, float y) {
+void createBoomRightCl(int powerboom, float x, float y, int team) {
 //	RectangleShape boom_;
 
-  for (int i = 0; i <= 9999; ++i) {
-    if (boomscl[i].isCreate) {
-      continue;
-    }
 
     int i1 = (int) floor(x / 50), j1 = (int) floor(y / 50);
 
@@ -277,30 +265,24 @@ void createBoomRightCl(int u, int powerboom, float x, float y) {
       powerboom = 0;
     }
 
-    boomscl[i].author = u;
-    boomscl[i].x = x;
-    boomscl[i].y = y;
-    boomscl[i].isCreate = true;
-    boomscl[i].powerboom = powerboom;
-    boomscl[i].team = player.team;
-    boomscl[i].direction = BoomDirection::RIGHT;
-    boomscl[i].btimer.restart();
+    sboomcl.x = x;
+    sboomcl.y = y;
+    sboomcl.powerboom = powerboom;
+    sboomcl.team = team;
+    sboomcl.direction = BoomDirection::RIGHT;
+    sboomcl.btimer.restart();
+    
+    boomscl.push_back(sboomcl);
 
     if (powerboom > 0) {
-      createBoomRightCl(u, powerboom - 1, x + 50, y);
+      createBoomRightCl(powerboom - 1, x + 50, y, team);
     }
-
-    break;
-  }
+    
 }
 
-void createBoomLeftCl(int u, int powerboom, float x, float y) {
+void createBoomLeftCl(int powerboom, float x, float y, int team) {
 //	RectangleShape boom_;
 
-  for (int i = 0; i <= 9999; ++i) {
-    if (boomscl[i].isCreate) {
-      continue;
-    }
 
     int i1 = (int) floor(x / 50), j1 = (int) floor(y / 50);
 
@@ -308,155 +290,137 @@ void createBoomLeftCl(int u, int powerboom, float x, float y) {
       powerboom = 0;
     }
 
-    boomscl[i].author = u;
-    boomscl[i].x = x;
-    boomscl[i].y = y;
-    boomscl[i].isCreate = true;
-    boomscl[i].powerboom = powerboom;
-    boomscl[i].team = player.team;
-    boomscl[i].direction = BoomDirection::LEFT;
-    boomscl[i].btimer.restart();
+    sboomcl.x = x;
+    sboomcl.y = y;
+    sboomcl.powerboom = powerboom;
+    sboomcl.team = team;
+    sboomcl.direction = BoomDirection::LEFT;
+    sboomcl.btimer.restart();
+    
+    boomscl.push_back(sboomcl);
 
     if (powerboom > 0) {
-      createBoomLeftCl(u, powerboom - 1, x - 50, y);
+      createBoomLeftCl(powerboom - 1, x - 50, y, team);
     }
-
-    break;
-  }
+    
 }
 
-void createBoomCenterCl(int u, int powerboom, float x, float y) {
+void createBoomCenterCl(int powerboom, float x, float y, int team) {
 //	RectangleShape boom_;
 
   y += 25;
 
-  for (int i = 0; i <= 9999; ++i) {
-    if (boomscl[i].isCreate) {
-      continue;
-    }
-
     int i1 = (int) floor(x / 50), j1 = (int) floor(y / 50);
 
     if (mapscl[i1][j1] >= 25) {
       powerboom = 0;
     }
 
-    boomscl[i].author = u;
-    boomscl[i].x = x;
-    boomscl[i].y = y;
-    boomscl[i].isCreate = true;
-    boomscl[i].powerboom = powerboom;
-    boomscl[i].team = player.team;
-    boomscl[i].direction = BoomDirection::CENTER;
-    boomscl[i].btimer.restart();
+    sboomcl.x = x;
+    sboomcl.y = y;
+    sboomcl.powerboom = powerboom;
+    sboomcl.team = team;
+    sboomcl.direction = BoomDirection::CENTER;
+    sboomcl.btimer.restart();
+
+    boomscl.push_back(sboomcl);
 
     if (powerboom > 0) {
-      createBoomUpCl(u, powerboom - 1, x, y - 50);
-      createBoomDownCl(u, powerboom - 1, x, y + 50);
-      createBoomRightCl(u, powerboom - 1, x + 50, y);
-      createBoomLeftCl(u, powerboom - 1, x - 50, y);
+      createBoomUpCl(powerboom - 1, x, y - 50, team);
+      createBoomDownCl(powerboom - 1, x, y + 50, team);
+      createBoomRightCl(powerboom - 1, x + 50, y, team);
+      createBoomLeftCl(powerboom - 1, x - 50, y, team);
     }
-
-    break;
-  }
+    
 }
 
 
-void createBomb(float x, float y, int i, int powerboom) {
+void createBomb(float x, float y, int powerboom, bool has_burn_wall, bool has_super_bomb) {
 
-  bombscl[i].x = x;
-  bombscl[i].y = y;
-  bombscl[i].isCreate = true;
-  bombscl[i].powerboom = powerboom;
-  bombscl[i].timerboom.restart();
+  sbombcl.x = x;
+  sbombcl.y = y;
+  sbombcl.powerboom = powerboom;
+  sbombcl.has_burn_wall = has_burn_wall;
+  sbombcl.has_super_bomb = has_super_bomb;
+  sbombcl.timer.restart();
+
+  bombscl.push_back(sbombcl);
+
 }
 
 
 void render_bomb() {
 
 
-  for (int i = 0; i < 1999; ++i) {
+//  for (auto bomb_ : bombscl) {
+//
+//
+//
+//    RectangleShape bomb;
+//    bomb.setPosition(bomb_.x,bomb_.y);
+//    bomb.setSize(Vector2f(50, 100));
+//    bomb.setTexture(&texture_bomb);
+//    int a = (((int) bomb_.timer.getElapsedTime().asMilliseconds() / 200) % 4) * 32;
+//    bomb.setTextureRect(IntRect(a, 0, 32, 64));
+//    app.draw(bomb);
+//
+//
+//  }
 
-    if (!bombscl[i].isCreate) {
-      continue;
-    }
+  for (auto it = bombscl.cbegin(); it != bombscl.cend(); ) {
+    auto bomb = *it;
+    
+    if (bomb.timer.getElapsedTime().asSeconds() >= 2.3) {
+      
+      it = bombscl.erase(it);
 
-    if (bombscl[i].timerboom.getElapsedTime().asSeconds() >= 2.3) {
-      createBoomCenterCl(bombscl[i].author, bombscl[i].powerboom, bombscl[i].x, bombscl[i].y);
+    } else {++it;}
 
-      ++player.maxbombcount;
-      bombscl[i].isCreate = false;
-    }
-
-    RectangleShape bomb;
-    bomb.setPosition(bombscl[i].x, bombscl[i].y);
-    bomb.setSize(Vector2f(50, 100));
-    bomb.setTexture(&texture_bomb);
-    int a = (((int) bombscl[i].timerboom.getElapsedTime().asMilliseconds() / 200) % 4) * 32;
-    bomb.setTextureRect(IntRect(a, 0, 32, 64));
-    app.draw(bomb);
-
+      
+      RectangleShape bomb_;
+      bomb_.setPosition(bomb.x,bomb.y);
+      bomb_.setSize(Vector2f(50, 100));
+      bomb_.setTexture(&texture_bomb);
+      int a = (((int) bomb.timer.getElapsedTime().asMilliseconds() / 200) % 4) * 32;
+      bomb_.setTextureRect(IntRect(a, 0, 32, 64));
+      app.draw(bomb_);
 
   }
+
 
 }
 
 void render_boom() {
 
-  for (int i = 0; i <= 9999; ++i) {
-    if (!boomscl[i].isCreate) {
-      continue;
-    }
+  for (auto it = boomscl.cbegin(); it != boomscl.cend(); ) {
+    auto boom = *it;
 
     int speed = 40;
 
-    if (boomscl[i].btimer.getElapsedTime().asMilliseconds() >= speed * 6) {
-      boomscl[i].isCreate = false;
-    }
+    if (boom.btimer.getElapsedTime().asMilliseconds() >= speed * 6) {
+
+      it = boomscl.erase(it);
+
+    } else {++it;}
 
     RectangleShape boom_;
-    boom_.setPosition(boomscl[i].x, boomscl[i].y);
+    boom_.setPosition(boom.x, boom.y);
     boom_.setSize(Vector2f(50, 50));
 
-    int texture_id = (int) boomscl[i].direction;
-    if (boomscl[i].direction != BoomDirection::CENTER && boomscl[i].powerboom == 0) {
+    int texture_id = (int) boom.direction;
+    if (boom.direction != BoomDirection::CENTER && boom.powerboom == 0) {
       texture_id += 4;
     }
     boom_.setTexture(&texture_boom[texture_id]);
 
 
-    int a = (((int) boomscl[i].btimer.getElapsedTime().asMilliseconds() / speed) % 6) * 32;
+    int a = (((int) boom.btimer.getElapsedTime().asMilliseconds() / speed) % 6) * 32;
     boom_.setTextureRect(IntRect(a, 0, 32, 32));
 
     app.draw(boom_);
 
-
-//		if (boomscl[i].direction == 0) { //CENTER
-//
-//			continue;
-//		}
-//
-//		if (boomscl[i].direction == 1) { //UP
-//
-//			continue;
-//		}
-//
-//		if (boomscl[i].direction == 2) { //DOWN
-//
-//			continue;
-//		}
-//
-//		if (boomscl[i].direction == 3) { //RIGHT
-//
-//			continue;
-//		}
-//
-//		if (boomscl[i].direction == 4) { //LEFT
-//
-//			continue;
-//		}
-
   }
+
 
 }
 
@@ -657,9 +621,6 @@ void render_player() {
 
 
   app.draw(playerhl);
-  if (Keyboard::isKeyPressed(Keyboard::LShift)) {
-    player.health -= 10;
-  }
 
 }
 
@@ -804,7 +765,7 @@ void render_map() {
         block.setTextureRect(IntRect(0, 0, 37, 37));
         app.draw(block);
 
-        int a = (((int) bombscl[i].timerboom.getElapsedTime().asMilliseconds()) % 360);
+        int a = (((int) gametimer.getElapsedTime().asMilliseconds()) % 360);
 
         block.setPosition(i1 - 1, j1 - 1);
         block.setSize(Vector2f(52, 52));
@@ -1141,7 +1102,8 @@ void network_on_client_message(uint8_t packet, const void *data) {
   case PacketServerCreateBomb::ID: {
     auto p = reinterpret_cast<const PacketServerCreateBomb *>(data);
 
-    createBomb(p->x, p->y, p->id, p->power);
+    createBomb(p->x, p->y, p->power, p->has_burn_wall, p->has_super_bomb);
+
 
     break;
   }
@@ -1169,6 +1131,45 @@ void network_on_client_message(uint8_t packet, const void *data) {
     auto p = reinterpret_cast<const PacketServerDestroyBlock *>(data);
 
     destroy_blockcl(p->i, p->j, p->tile);
+
+    break;
+  }
+
+  case PacketServerActivateBomb::ID: {
+    auto p = reinterpret_cast<const PacketServerActivateBomb *>(data);
+
+    createBoomCenterCl(p->power, p->x, p->y, p->team);
+
+    ++player.maxbombcount;
+
+    //delete bomb
+
+    break;
+  }
+
+  case PacketServerPlayerTakeBonus::ID: {
+    auto p = reinterpret_cast<const PacketServerPlayerTakeBonus *>(data);
+    int bonus = p->bonus;
+
+    if (bonus == 1) {
+      ++player.maxbombcount;
+    }
+    if (bonus == 2) {
+      ++player.powerboom;
+    }
+    if (bonus == 3) {
+      ++player.rickins;
+    }
+    if (bonus == 4) {
+      player.has_radio_bomb = true;
+    }
+    if (bonus == 5) {
+      player.has_burn_wall = true;
+    }
+    if (bonus == 6) {
+      player.has_super_bomb = true;
+    }
+
 
     break;
   }

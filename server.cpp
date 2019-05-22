@@ -13,11 +13,13 @@ int bomb_count = 0;
 struct Player {
     float x = 0, y = 0;
     bool isCreate = false;
-    int team = 0, speed = 100, radius = 25, health = 2, maxhealth = 10000, maxbombcount = 1, powerboom = 5, lvl;
+    int team = 0, speed = 100, radius = 25, health = 2, maxhealth = 10000, lvl;
     Clock respawntimer, bombtimer;
     string name;
     int lname;
-} players[2000];
+    int maxbombcount = 1, powerboom = 5, rickins = 1;
+    bool has_burn_wall = false, has_radio_bomb = false, has_super_bomb = false;
+} players[32];
 
 /* select team for players */
 
@@ -29,12 +31,13 @@ struct PlayerSpawn {
 } spawns[2000];
 int spawns_count = 0;
 
-struct bomb {
+struct Bomb {
     float x = 0, y = 0;
     Clock timerboom;
     int author = 1, powerboom, team = 0;
-    bool isCreate = false;
-} bombs[2000];
+    int id;
+} sbomb;
+vector<Bomb *> bombs;
 
 enum class BoomDirection : int {
     CENTER = 0,
@@ -47,10 +50,10 @@ enum class BoomDirection : int {
 struct boom {
     float x = 0, y = 0;
     int team = 0, author, powerboom;
-    bool isCreate = false;
     Clock btimer;
     BoomDirection direction;
-} booms[10000];
+} sboom;
+vector<boom> booms;
 
 
 
@@ -101,10 +104,62 @@ int structspawnsize = 3;
 int maps[1024][1024];
 int sizem = 64;
 
-void destroy_block(int i, int j) {
+void destroy_block(int i, int j, int playerid) {
 
   if (maps[i][j] < 0) {
-    maps[i][j] = 0;
+
+    PacketServerPlayerTakeBonus bonus;
+
+    if (maps[i][j] == -1) {
+      if (players[playerid].maxbombcount <= 6) {
+        ++players[playerid].maxbombcount;
+        maps[i][j] = 0;
+        bonus.bonus = 1; // bomb count
+      }
+    }
+
+    if (maps[i][j] == -2) {
+      if (players[playerid].powerboom <= 6) {
+        ++players[playerid].powerboom;
+        maps[i][j] = 0;
+        bonus.bonus = 2; // power
+      }
+    }
+
+    if (maps[i][j] == -3) {
+      if (players[playerid].rickins <= 4) {
+        ++players[playerid].rickins;
+        maps[i][j] = 0;
+        bonus.bonus = 3; // rickins
+      }
+    }
+
+    if (maps[i][j] == -4) {
+      if (!players[playerid].has_radio_bomb) {
+        players[playerid].has_radio_bomb = true;
+        maps[i][j] = 0;
+        bonus.bonus = 4; // radio bomb
+      }
+    }
+
+    if (maps[i][j] == -5) {
+      if (!players[playerid].has_burn_wall) {
+        players[playerid].has_burn_wall = true;
+        maps[i][j] = 0;
+        bonus.bonus = 5; // burn wall
+      }
+    }
+
+    if (maps[i][j] == -6) {
+      if (!players[playerid].has_super_bomb) {
+        players[playerid].has_super_bomb = true;
+        maps[i][j] = 0;
+        bonus.bonus = 6; // super bomb
+      }
+    }
+
+    network_server_send(playerid, &bonus);
+
   }
 
   if (maps[i][j] >= 50) {
@@ -240,146 +295,127 @@ void createmap() {
 void createBoomUp(int u, int powerboom, float x, float y) {
 //	RectangleShape boom_;
 
-  for (int i = 0; i <= 9999; ++i) {
-    if (booms[i].isCreate) {
-      continue;
-    }
-
     int i1 = (int) floor(x / 50), j1 = (int) floor(y / 50);
 
     if (maps[i1][j1] < 0) {
-      destroy_block(i1, j1);
+      destroy_block(i1, j1, 0);
     }
     if (maps[i1][j1] >= 25) {
       powerboom = 0;
-      destroy_block(i1, j1);
+      destroy_block(i1, j1, 0);
     }
 
 
-    booms[i].author = u;
-    booms[i].x = x;
-    booms[i].y = y;
-    booms[i].isCreate = true;
-    booms[i].powerboom = powerboom;
-    booms[i].team = players[u].team;
-    booms[i].direction = BoomDirection::UP;
-    booms[i].btimer.restart();
+    sboom.author = u;
+    sboom.x = x;
+    sboom.y = y;
+    sboom.powerboom = powerboom;
+    sboom.team = players[u].team;
+    sboom.direction = BoomDirection::UP;
+    sboom.btimer.restart();
+
+    booms.push_back(sboom);
 
     if (powerboom > 0) {
       createBoomUp(u, powerboom - 1, x, y - 50);
-//			cout << powerboom << "\n";
     }
 
-    break;
-  }
 }
 
 void createBoomDown(int u, int powerboom, float x, float y) {
 //	RectangleShape boom_;
 
-  for (int i = 0; i <= 9999; ++i) {
-    if (booms[i].isCreate) {
-      continue;
-    }
 
     int i1 = (int) floor(x / 50), j1 = (int) floor(y / 50);
 
     if (maps[i1][j1] < 0) {
-      destroy_block(i1, j1);
+      destroy_block(i1, j1, 0);
     }
     if (maps[i1][j1] >= 25) {
       powerboom = 0;
-      destroy_block(i1, j1);
+      destroy_block(i1, j1, 0);
     }
 
 
-    booms[i].author = u;
-    booms[i].x = x;
-    booms[i].y = y;
-    booms[i].isCreate = true;
-    booms[i].powerboom = powerboom;
-    booms[i].team = players[u].team;
-    booms[i].direction = BoomDirection::DOWN;
-    booms[i].btimer.restart();
+  sboom.author = u;
+  sboom.x = x;
+  sboom.y = y;
+  sboom.powerboom = powerboom;
+  sboom.team = players[u].team;
+  sboom.direction = BoomDirection::DOWN;
+  sboom.btimer.restart();
+
+  booms.push_back(sboom);
 
     if (powerboom > 0) {
       createBoomDown(u, powerboom - 1, x, y + 50);
     }
 
-    break;
-  }
 }
 
 void createBoomRight(int u, int powerboom, float x, float y) {
 //	RectangleShape boom_;
 
-  for (int i = 0; i <= 9999; ++i) {
-    if (booms[i].isCreate) {
-      continue;
-    }
+
 
     int i1 = (int) floor(x / 50), j1 = (int) floor(y / 50);
 
     if (maps[i1][j1] < 0) {
-      destroy_block(i1, j1);
+      destroy_block(i1, j1, 0);
     }
     if (maps[i1][j1] >= 25) {
       powerboom = 0;
-      destroy_block(i1, j1);
+      destroy_block(i1, j1, 0);
     }
 
 
-    booms[i].author = u;
-    booms[i].x = x;
-    booms[i].y = y;
-    booms[i].isCreate = true;
-    booms[i].powerboom = powerboom;
-    booms[i].team = players[u].team;
-    booms[i].direction = BoomDirection::RIGHT;
-    booms[i].btimer.restart();
+  sboom.author = u;
+  sboom.x = x;
+  sboom.y = y;
+  sboom.powerboom = powerboom;
+  sboom.team = players[u].team;
+  sboom.direction = BoomDirection::RIGHT;
+  sboom.btimer.restart();
+
+  booms.push_back(sboom);
 
     if (powerboom > 0) {
       createBoomRight(u, powerboom - 1, x + 50, y);
     }
 
-    break;
-  }
+
 }
 
 void createBoomLeft(int u, int powerboom, float x, float y) {
 //	RectangleShape boom_;
 
-  for (int i = 0; i <= 9999; ++i) {
-    if (booms[i].isCreate) {
-      continue;
-    }
 
     int i1 = (int) floor(x / 50), j1 = (int) floor(y / 50);
 
     if (maps[i1][j1] < 0) {
-      destroy_block(i1, j1);
+      destroy_block(i1, j1, 0);
     }
     if (maps[i1][j1] >= 25) {
       powerboom = 0;
-      destroy_block(i1, j1);
+      destroy_block(i1, j1, 0);
     }
 
 
-    booms[i].author = u;
-    booms[i].x = x;
-    booms[i].y = y;
-    booms[i].isCreate = true;
-    booms[i].powerboom = powerboom;
-    booms[i].team = players[u].team;
-    booms[i].direction = BoomDirection::LEFT;
-    booms[i].btimer.restart();
+  sboom.author = u;
+  sboom.x = x;
+  sboom.y = y;
+  sboom.powerboom = powerboom;
+  sboom.team = players[u].team;
+  sboom.direction = BoomDirection::LEFT;
+  sboom.btimer.restart();
+
+  booms.push_back(sboom);
 
     if (powerboom > 0) {
       createBoomLeft(u, powerboom - 1, x - 50, y);
     }
 
-    break;
-  }
+
 }
 
 void createBoomCenter(int u, int powerboom, float x, float y) {
@@ -387,30 +423,27 @@ void createBoomCenter(int u, int powerboom, float x, float y) {
 
   y += 25;
 
-  for (int i = 0; i <= 9999; ++i) {
-    if (booms[i].isCreate) {
-      continue;
-    }
 
     int i1 = (int) floor(x / 50), j1 = (int) floor(y / 50);
 
     if (maps[i1][j1] < 0) {
-      destroy_block(i1, j1);
+      destroy_block(i1, j1, 0);
     }
     if (maps[i1][j1] >= 25) {
       powerboom = 0;
-      destroy_block(i1, j1);
+      destroy_block(i1, j1, 0);
     }
 
 
-    booms[i].author = u;
-    booms[i].x = x;
-    booms[i].y = y;
-    booms[i].isCreate = true;
-    booms[i].powerboom = powerboom;
-    booms[i].team = players[u].team;
-    booms[i].direction = BoomDirection::CENTER;
-    booms[i].btimer.restart();
+    sboom.author = u;
+    sboom.x = x;
+    sboom.y = y;
+    sboom.powerboom = powerboom;
+    sboom.team = players[u].team;
+    sboom.direction = BoomDirection::CENTER;
+    sboom.btimer.restart();
+
+    booms.push_back(sboom);
 
     if (powerboom > 0) {
       createBoomUp(u, powerboom - 1, x, y - 50);
@@ -419,50 +452,88 @@ void createBoomCenter(int u, int powerboom, float x, float y) {
       createBoomLeft(u, powerboom - 1, x - 50, y);
     }
 
-    break;
-  }
 }
 
 void createBomb(int u) {
 
-  for (int i = 0; i < 1999; ++i) {
-    if (!bombs[i].isCreate && players[u].health > 0 && players[u].maxbombcount > 0) {
-      bombs[i].x = floor((players[u].x + 25) / 50) * 50;
-      bombs[i].y = floor((players[u].y + 25) / 50) * 50 - 25;
-      bombs[i].team = players[u].team;
-      bombs[i].timerboom.restart();
-      bombs[i].author = u;
-      bombs[i].isCreate = true;
-      bombs[i].powerboom = players[u].powerboom;
-      ++bomb_count;
-      --players[u].maxbombcount;
-//      --players[u].maxbombcount;
 
-//      cout << players[u].maxbombcount << "\n";
+  if (players[u].health > 0 && players[u].maxbombcount > 0) {
+    auto bomb = new Bomb();
 
-      break;
-    }
+    bomb->x = floor((players[u].x + 25) / 50) * 50;
+    bomb->y = floor((players[u].y + 25) / 50) * 50 - 25;
+    bomb->team = players[u].team;
+    bomb->timerboom.restart();
+    bomb->author = u;
+    bomb->powerboom = players[u].powerboom;
+    ++bomb_count;
+    --players[u].maxbombcount;
+
+    bombs.push_back(bomb);
 
   }
 }
 
 void bombControl() {
 
-  for (int i = 0; i <= 1000; ++i) {
-    if (!bombs[i].isCreate) {
-      continue;
-    }
+//  for (auto bomb_ : bombs) {
+//
+//
+//    if (bomb_.timerboom.getElapsedTime().asSeconds() >= 2.3) {
+//      createBoomCenter(bomb_.author, bomb_.powerboom, bomb_.x, bomb_.y);
+//
+//      ++players[bomb_.author].maxbombcount;
+////      delete bomb
+//
+//      PacketServerActivateBomb bomb1;
+//
+//      bomb1.power = bomb_.powerboom;
+////      bomb1.has_super_bomb = players[bomb_.author].has_super_bomb;
+////      bomb1.has_burn_wall = players[bomb_.author].has_burn_wall;
+//      bomb1.x = bomb_.x;
+//      bomb1.y = bomb_.y;
+//      bomb1.team = players[bomb_.author].team;
+//
+//      network_server_broadcast(&bomb1);
+//
+//    }
+//
+//  }
 
-    if (bombs[i].timerboom.getElapsedTime().asSeconds() >= 2.3) {
-      createBoomCenter(bombs[i].author, bombs[i].powerboom, bombs[i].x, bombs[i].y);
+  for (auto it = bombs.cbegin(); it != bombs.cend(); ) {
+    auto bomb = *it;
 
-      ++players[bombs[i].author].maxbombcount;
-      bombs[i].isCreate = false;
-    }
+    if (bomb->timerboom.getElapsedTime().asSeconds() >= 2.3) {
 
+      createBoomCenter(bomb->author, bomb->powerboom, bomb->x, bomb->y);
+
+      ++players[bomb->author].maxbombcount;
+
+      it = bombs.erase(it);
+
+      PacketServerActivateBomb bombPacket;
+
+      bombPacket.power = bomb->powerboom;
+//      bombPacket.has_super_bomb = players[bomb_.author].has_super_bomb;
+//      bombPacket.has_burn_wall = players[bomb_.author].has_burn_wall;
+      bombPacket.x = bomb->x;
+      bombPacket.y = bomb->y;
+      bombPacket.team = players[bomb->author].team;
+
+      network_server_broadcast(&bombPacket);
+
+    } else ++it;
   }
 
 }
+
+//for(auto itr = files.cbegin(); itr != files.cend();) {
+//if (exists(*itr)) {
+//std::cout << "Found file: " << *itr << "\n";
+//itr = files.erase(itr);
+//} else
+//++itr;
+//}
 
 void respawnplayer(int i) {
 
@@ -494,7 +565,6 @@ void ServerSendCoordinates() {
     players_coord.x = players[i].x;
     players_coord.y = players[i].y;
     players_coord.id = i;
-//		cout << players[i].x << " " << players[i].y << "\n";
     for (int j = 0; j < 32; ++j) {
       network_server_send(j, &players_coord);
     }
@@ -517,8 +587,6 @@ void network_on_server_message(int i, uint8_t packet, const void *data) {
   case PacketPlayerCreateBomb::ID: {
     auto p = reinterpret_cast<const PacketPlayerCreateBomb *>(data);
 
-
-//    cout << "HELLO\n";
     if (players[p->id].health <= 0) {
       return;
     }
@@ -527,29 +595,22 @@ void network_on_server_message(int i, uint8_t packet, const void *data) {
       return;
     }
 
-    for (int j = 0; j < 1999; ++j) {
-      if (!bombs[j].isCreate && players[p->id].health > 0 && players[p->id].maxbombcount > 0) {
+      if (players[p->id].health > 0 && players[p->id].maxbombcount > 0) {
 
 
         PacketServerCreateBomb new_bomb;
         new_bomb.x = floor((players[p->id].x + 25) / 50) * 50;
         new_bomb.y = floor((players[p->id].y + 25) / 50) * 50 - 25;
         new_bomb.power = players[p->id].powerboom;
-        new_bomb.id = j;
-        createBomb(p->id);
 
-//        cout << new_bomb.id << " " << new_bomb.power << " " << new_bomb.x << " " << new_bomb.y << "\n";
+        createBomb(p->id);
 
         network_server_broadcast(&new_bomb);
 
 
-        break;
-      }
-
     }
 
 
-//		network_server_send(i, "pong", &r);
     break;
   }
 
@@ -557,7 +618,6 @@ void network_on_server_message(int i, uint8_t packet, const void *data) {
 
   case PacketPlayerConnect::ID: {
     auto p = reinterpret_cast<const PacketPlayerConnect *>(data);
-//		cout << i << "\n";
 
     PacketServerSendPlayersInfo inform;
 
@@ -617,16 +677,16 @@ void network_on_server_message(int i, uint8_t packet, const void *data) {
     ServerSendCoordinates();
 
     if (maps[(int)floor(players[j].x/50)][(int)floor(players[j].y/50)] < 0) {
-      destroy_block((int)floor(players[j].x/50), (int)floor(players[j].y/50));
+      destroy_block((int)floor(players[j].x/50), (int)floor(players[j].y/50), j);
     }
     if (maps[(int)floor(players[j].x/50)+1][(int)floor(players[j].y/50)+1] < 0) {
-      destroy_block((int)floor(players[j].x/50)+1, (int)floor(players[j].y/50)+1);
+      destroy_block((int)floor(players[j].x/50)+1, (int)floor(players[j].y/50)+1, j);
     }
     if (maps[(int)floor(players[j].x/50)+1][(int)floor(players[j].y/50)] < 0) {
-      destroy_block((int)floor(players[j].x/50)+1, (int)floor(players[j].y/50));
+      destroy_block((int)floor(players[j].x/50)+1, (int)floor(players[j].y/50), j);
     }
     if (maps[(int)floor(players[j].x/50)][(int)floor(players[j].y/50)+1] < 0) {
-      destroy_block((int)floor(players[j].x/50), (int)floor(players[j].y/50)+1);
+      destroy_block((int)floor(players[j].x/50), (int)floor(players[j].y/50)+1, j);
     }
 
     break;
